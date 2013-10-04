@@ -1,0 +1,50 @@
+\name{plot_tree_ranks}
+\alias{plot_tree_ranks}
+\title{plots a tree along with a series of taxonomic ranks}
+\usage{
+  plot_tree_ranks(tree, taxonomy, main = NULL,
+    type = "unrooted", ranks = common_ranks, size = 2,
+    guide_size = NULL, legend_cutoff = 25, ...)
+}
+\arguments{
+  \item{ranks}{The ranks to include, defaults to all common
+  ranks, if null print all ranks.}
+
+  \item{tree}{to be plotted, use layout_tree to layout
+  tree.}
+
+  \item{taxonomy}{A data.frame with an accession field
+  corresponding to the tree tip labels.}
+
+  \item{main}{An optional title for the plot}
+
+  \item{type}{The type of tree to plot, default unrooted.}
+
+  \item{size}{The size of the colored points}
+
+  \item{guide_size}{The size of the length guide.  If NULL
+  auto detects a reasonable size.}
+
+  \item{legend_cutoff}{The number of different taxa names
+  after which the names are no longer printed.}
+
+  \item{...}{additional arguments passed to
+  \code{\link{layout_tree_ape}}}
+}
+\description{
+  plots a tree along with a series of taxonomic ranks
+}
+\examples{
+library(gridExtra)
+library(directlabels)
+#plot all the common ranks
+plot_tree_ranks(mammals_16S$tree, mammals_16S$taxonomy)
+#plot specific ranks, with a larger dot size
+plot_tree_ranks(mammals_16S$tree, mammals_16S$taxonomy,
+  ranks=c('kingdom', 'class', 'family'), size=3)
+}
+\seealso{
+  \code{\link{plot_tree}} to plot only a single rank or the
+  just the tree layout.
+}
+
