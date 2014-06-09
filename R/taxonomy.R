@@ -5,7 +5,7 @@
 #'
 #' @param gis a character vector of the gis to retrieve
 #' @return data.frame of the 'gis, taxIds, and taxonomy
-#' @export get_taxonomy
+#' @export
 
 get_taxonomy = function(gis){
 
@@ -22,7 +22,7 @@ get_taxonomy = function(gis){
 #'
 #' @param gi gi character vector to lookup.
 #' @return named vector of taxIds.
-#' @export gi2taxid
+#' @export
 
 gi2taxid = function(gi){
   url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi'
@@ -42,7 +42,7 @@ gi2taxid = function(gi){
 parse_LinkSet = function(LinkSet){
   gid = xpathSApply(LinkSet, './/IdList/Id', xmlValue)
   taxid = xpathSApply(LinkSet, './/LinkSetDb/Link/Id', xmlValue)
-  if(length(taxid) == 0)
+  if(length(taxid) != 1)
     taxid = NA
   names(taxid) = gid
   taxid
@@ -51,7 +51,7 @@ parse_LinkSet = function(LinkSet){
 #'
 #' @param accession accession character vector to lookup.
 #' @return named vector of gis.
-#' @export accession2gi
+#' @export
 
 accession2gi = function(accession){
   url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'

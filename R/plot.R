@@ -7,7 +7,7 @@
 #' @inheritParams plot_tree
 #' @seealso \code{\link{plot_tree}} to plot only a single rank or the just the
 #' tree layout.
-#' @export plot_tree_ranks
+#' @export
 #' @examples
 #' library(gridExtra)
 #' library(directlabels)
@@ -51,7 +51,7 @@ common_ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "spec
 #'        names are no longer printed.
 #' @param ... additional arguments passed to \code{\link{layout_tree_ape}}
 #' @return plot to be printed.
-#' @export plot_tree
+#' @export
 
 plot_tree = function(tree, type='unrooted', main=NULL, guide_size=NULL,
                      rank=NULL, taxonomy=NULL,  size=2, legend_cutoff=25, ...){
@@ -91,17 +91,19 @@ plot_tree = function(tree, type='unrooted', main=NULL, guide_size=NULL,
                     aes_string(x='x', y='y', color=rank, label=rank))
         }
   }
-  p + ggtitle(main)
+  p = p + ggtitle(main)
+  class(p) = c(class(p), 'primerTree_plot')
+  p
 }
 
 #' layout a tree using ape, return an object to be plotted by
 #' \code{\link{plot_tree}}
 #' @param tree The \code{\link{phylo}} tree to be plotted
 #' @param ... additional arguments to \code{\link{plot.phylo}}
-#' @return \item{name edge}{description list of x, y and xend, yend coordinates
+#' @return \item{edge}{list of x, y and xend, yend coordinates
 #' as well as ids for the edges}
-#' \item{name tips}{description list of x, y, label and id for the tips}
-#' \item{name nodes}{description list of x, y and id for the nodes}
+#' \item{tips}{list of x, y, label and id for the tips}
+#' \item{nodes}{list of x, y and id for the nodes}
 layout_tree_ape = function(tree, ...){
   #hack to write no output
   cur_dev = dev.cur() #store previous dev

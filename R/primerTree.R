@@ -26,7 +26,7 @@ NULL
 #' @docType data
 NULL
 
-#' @S3method print primerTree
+#' @export
 print.primerTree = function(x, ...){
   cat("Name: ", x$name, "\n",
       "  Arguments: ", paste(names(x$arguments), x$arguments, sep=":", collapse=' '), "\n")
@@ -42,10 +42,10 @@ print.primerTree = function(x, ...){
 #' plot function for a primerTree object, calls plot_tree_ranks
 #' @param x primerTree object to plot
 #' @param ranks The ranks to include, defaults to all common ranks, if NULL
-  #' print all ranks.  If 'none' just print the layout.
+#'   print all ranks.  If 'none' just print the layout.
+#' @param main an optional title to display, if NULL displays the name as the title
 #' @param ... additional arguments passed to plot_tree_ranks
-#' @method plot primerTree
-#' @export plot.primerTree
+#' @export
 #' @seealso \code{\link{plot_tree_ranks}}, \code{\link{plot_tree}}
 #' @examples
 #' library(gridExtra)
@@ -58,19 +58,23 @@ print.primerTree = function(x, ...){
 #'
 #' #plot the layout only
 #' plot(mammals_16S, 'none')
-plot.primerTree = function(x, ranks=NULL, ...){
+plot.primerTree = function(x, ranks=NULL, main=NULL, ...){
   if(is.null(ranks)){
-    plot_tree_ranks(x$tree, x$taxonomy, x$name, ...)
+    if(is.null(main))
+      main = x$name
+    plot_tree_ranks(x$tree, x$taxonomy, main=main, ...)
   }
   else if(length(ranks) > 1){
-    plot_tree_ranks(x$tree, x$taxonomy, x$name, ranks=ranks, ...)
+    if(is.null(main))
+      main = x$name
+    plot_tree_ranks(x$tree, x$taxonomy, ranks=ranks, main=main, ...)
   }
   else {
     if(ranks == 'none') {
-      plot_tree(x$tree, ...)
+      plot_tree(x$tree, main=main, ...)
     }
     else{
-      plot_tree(x$tree, taxonomy=x$taxonomy, rank=ranks, ...)
+      plot_tree(x$tree, taxonomy=x$taxonomy, rank=ranks, main=main, ...)
     }
   }
 }
@@ -81,20 +85,22 @@ plot.primerTree = function(x, ranks=NULL, ...){
 #' @param simplify use simple names for primer hit results or complex
 #' @param .progress name of the progress bar to use, see
 #' \code{\link{create_progress_bar}}
-#' @param clustal_options a list of options to pass to clustal omega, run
+#' @param clustal_options a list of options to pass to clustal omega, see
 #'    \code{link{clustalo}} for a list of options
+#' @param distance_options a list of options to pass to dist.dna, see
+#'    \code{link{dist.dna}} for a list of options
 #' @inheritParams primer_search
 #' @return A list with the following elements,
-#' \item{name name}{description name of the primer pair}
-#' \item{name BLAST_result}{description html blast results from Primer-BLAST as
+#' \item{name}{name of the primer pair}
+#' \item{BLAST_result}{html blast results from Primer-BLAST as
 #'  'a \code{\link{response}}} object.
-#' \item{name taxonomy}{description taxonomy for the primer products from NCBI}
-#' \item{name sequence}{description sequence of the primer products}
-#' \item{name alignment}{description multiple alignment of the primer products}
-#' \item{name tree}{description phylogenetic tree of the reconstructed from the
+#' \item{taxonomy}{taxonomy for the primer products from NCBI}
+#' \item{sequence}{sequence of the primer products}
+#' \item{alignment}{multiple alignment of the primer products}
+#' \item{tree}{phylogenetic tree of the reconstructed from the
 #' 'multiple alignment}
 #' @seealso \code{\link{primer_search}}, \code{\link{clustalo}}
-#' @export search_primer_pair
+#' @export
 #' @examples
 #' \dontrun{
 #' #simple search
@@ -106,13 +112,17 @@ plot.primerTree = function(x, ranks=NULL, ...){
 #'  num_aligns=1000, total_primer_specificity_mismatch=3)
 #' }
 search_primer_pair = function(forward, reverse, name=NULL, num_aligns=500,
-    num_permutations=25, simplify=TRUE, clustal_options=list(), ...,
-    .parallel=FALSE, .progress='none'){
+    num_permutations=25, simplify=TRUE, clustal_options=list(), distance_options=list(model='raw'),
+    ..., .parallel=FALSE, .progress='none'){
 
   #HACK, primerTree is an environment rather than a list so we can treat it as
   #a pointer, I could make it a reference class, but that seems to be overkill
   #as I am converting to a list at the end of the function anyway...
 
+  if(missing(forward) || missing(reverse)){
+    BLAST_primer()
+    return()
+  }
 
   primer_search = new.env(parent=globalenv())
   #list all primers used to search
@@ -163,6 +173,11 @@ search_primer_pair = function(forward, reverse, name=NULL, num_aligns=500,
               ' length:', ncol(primer_search$alignment))
 
       start_time = now()
+      primer_search$distances = do.call(dist.dna, c(list(primer_search$alignment, distance_options)))
+      message('pairwise DNA distances calculated in ',
+              seconds_elapsed_text(start_time))
+
+      start_time = now()
       primer_search$tree = tree_from_alignment(primer_search$alignment)
       message('constructed neighbor joining tree in ', seconds_elapsed_text(start_time))
 
@@ -182,4 +197,65 @@ seconds_elapsed_text = function(start_time){
 env2list = function(env){
   names = ls(env)
   mget(names, env)
+}
+#' identify the point closest to the mouse click
+#' only works on single ranks
+#' @param x the plot to identify
+#' @param ... additional arguments passed to annotate
+#' @export
+identify.primerTree_plot = function(x, ...) {
+  point = gglocator(plot$layers[[4]])
+  distances <- distance(point, plot$layers[[4]]$data[,c('x','y')])
+  closest <- which(distances == min(distances))[1]
+  point$label <- plot$layers[[4]]$data[closest,deparse(plot$layers[[4]]$mapping$colour)]
+  plot + annotate("text", label=point$label, x=point$x, y=point$y, ...)
+}
+gglocator = function(object) {
+  loc <-  as.numeric(grid.locator("npc"))
+
+  xrng <- with(object, range(data[,deparse(mapping$x)]))
+  yrng <- with(object, range(data[,deparse(mapping$y)]))
+
+  point <- data.frame(xrng[1] + loc[1]*diff(xrng), yrng[1] + loc[2]*diff(yrng))
+  names(point) <- with(object, c(deparse(mapping$x), deparse(mapping$y)))
+  point
+}
+
+#returns the distance from a point in point to the points in points
+distance <- function(point,points){
+  sqrt((point$x-points$x)^2 + (point$y-points$y)^2)
+}
+
+#' Summarize a primerTree result, printing quantiles of sequence length and
+#' pairwise differences.
+
+#' @param object the primerTree object to summarise
+#' @param ... Ignored options
+#' @param probs quantile probabilities to compute, defaults to 0, 5, 50, 95,
+#' and 100 probabilities.
+#' @param ranks ranks to show unique counts for, defaults to the common ranks
+#' @return invisibly returns a list containing the printed results
+#' @export
+summary.primerTree <- function(object, ..., probs=c(0, .05, .5, .95, 1), ranks = common_ranks) {
+
+  res = list()
+  res[['lengths']] = t(data.frame('Sequence lengths'=labeled_quantile(laply(object$sequence, length), sprintf('%.0f%%', probs*100), probs=probs), check.names=F))
+  print(res[['lengths']])
+
+  res[['distances']] = t(data.frame('Pairwise differences'=labeled_quantile(object$distance, sprintf('%.0f%%', probs*100), probs=probs), check.names=F))
+  cat('\n')
+  print(res[['distances']])
+
+  res[['ranks']] = laply(object$taxonomy[common_ranks], function(x) length(unique(x)))
+  cat('\n', 'Unique taxa out of ', length(object$sequence), ' sequences\n', sep='')
+  names(res[['ranks']]) = ranks
+  print(res[['ranks']])
+
+  invisible(res)
+}
+
+labeled_quantile = function(x, labels, ...){
+  res = quantile(x, ...)
+  names(res) = labels
+  res
 }
