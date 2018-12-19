@@ -25,7 +25,7 @@ get_taxonomy = function(gis){
 #' @export
 
 gi2taxid = function(gi){
-  url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi'
+  url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi'
 
   names(gi) = rep('id', times=length(gi))
   query=c(list(db='taxonomy', dbfrom='nuccore'), gi)
@@ -35,7 +35,7 @@ gi2taxid = function(gi){
   #stop if response failed
   stop_for_status(response)
 
-  parsed = content(response, type='text/xml')
+  parsed = xmlParse(content(response, as="text"))
 
   xpathSApply(parsed, '//LinkSet', parse_LinkSet)
 }
@@ -54,7 +54,7 @@ parse_LinkSet = function(LinkSet){
 #' @export
 
 accession2gi = function(accession){
-  url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
+  url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
   query=list(db='nuccore', rettype='seqid', id=paste(collapse=',', accession))
 
   response=POST_retry(url, body=query)
@@ -72,7 +72,7 @@ accession2gi = function(accession){
 }
 fetch_taxonomy = function(taxid) {
 
-  fetch_url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
+  fetch_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
 
   query=list(db='taxonomy', rettype='null', retmode='xml', id=paste(taxid, collapse=','))
 
@@ -81,7 +81,7 @@ fetch_taxonomy = function(taxid) {
   #stop if response failed
   stop_for_status(response)
 
-  parse_taxonomy_xml(content(response))
+  parse_taxonomy_xml(xmlParse(content(response, as="text")))
 }
 parse_taxonomy_xml = function(xml){
   rbind.fill(xpathApply(xml, '//TaxaSet/Taxon', parse_taxon))

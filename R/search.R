@@ -15,7 +15,7 @@
 #' @param .parallel if 'TRUE', perform in parallel, using parallel backend
 #'        provided by foreach
 #' @param .progress name of the progress bar to use, see 'create_progress_bar'
-#' @return data.frame of primer hits
+#' @return httr response object of the query, pass to \code{\link{parse_primer_hits}} to parse the results.
 #' @export
 primer_search = function(forward, reverse, num_aligns=500, num_permutations=25, ..., .parallel=FALSE, .progress='none'){
   if(missing(forward) || missing(reverse))
@@ -48,7 +48,8 @@ enumerate_primers = function(forward, reverse){
   forward_primers = enumerate_ambiguity(forward)
   data.frame(forward=forward_primers,
              reverse=rep(enumerate_ambiguity(reverse),
-                         each=length(forward_primers)))
+                         each=length(forward_primers)),
+             stringsAsFactors = FALSE)
 }
 enumerate_ambiguity = function(sequence){
   search_regex = paste(names(iupac), collapse='|')
@@ -81,7 +82,7 @@ print_options = function(options){
 BLAST_primer = function(forward, reverse, ..., organism='',
   primer_specificity_database='nt', exclude_env='on'){
 
-  url = 'http://www.ncbi.nlm.nih.gov/tools/primer-blast/'
+  url = 'https://www.ncbi.nlm.nih.gov/tools/primer-blast/'
   form = GET_retry(url)
 
   content = parsable_html(form)
@@ -136,7 +137,7 @@ retry = function(fun, num_retry=5, ...){
     res = fun(...)
     itr = 0
     status = http_status(res)
-    while(itr < num_retry && inherits(res, 'response') && status$category != "success"){
+    while(itr < num_retry && inherits(res, 'response') && tolower(status$category) != 'success'){
       warning('request failed, retry attempt ', itr+1)
       res = fun(...)
       status = http_status(res)
@@ -149,6 +150,10 @@ retry = function(fun, num_retry=5, ...){
 GET_retry = retry(GET)
 POST_retry = retry(POST)
 
+#' Parse the primer hits
+#'
+#' @param response a httr response object obtained from \code{\link{primer_search}}
+#' @export
 parse_primer_hits = function(response){
   content = parsable_html(response)
   rbind.fill(xpathApply(content, '//pre', parse_pre))
@@ -232,7 +237,7 @@ parse_attributes = function(x){
   as.data.frame(t(xmlAttrs(x)))
 }
 parsable_html = function(response){
-  txt <- content(response, as='text')
+  txt <- content(response, as='text', encoding='UTF-8')
 
   # remove any unicode characters
   Encoding(txt) <- "UTF-8"

@@ -8,8 +8,8 @@ a multiple alignment of the products}
 \usage{
 search_primer_pair(forward, reverse, name = NULL, num_aligns = 500,
   num_permutations = 25, simplify = TRUE, clustal_options = list(),
-  distance_options = list(model = "raw"), ..., .parallel = FALSE,
-  .progress = "none")
+  distance_options = list(model = "N", pairwise.deletion = T), ...,
+  .parallel = FALSE, .progress = "none")
 }
 \arguments{
 \item{forward}{forward primer to search by 5'-3' on plus strand}
@@ -70,4 +70,3 @@ mammals_16S = search_primer_pair(name='Mammals 16S',
 \seealso{
 \code{\link{primer_search}}, \code{\link{clustalo}}
 }
-
