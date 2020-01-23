@@ -4,7 +4,12 @@
 \alias{get_sequence}
 \title{Retrieves a fasta sequence from NCBI nucleotide database.}
 \usage{
-get_sequence(gi, start = NULL, stop = NULL)
+get_sequence(
+  gi,
+  start = NULL,
+  stop = NULL,
+  api_key = Sys.getenv("NCBI_API_KEY")
+)
 }
 \arguments{
 \item{gi}{nucleotide gi to retrieve.}
@@ -14,6 +19,8 @@ beginning of the sequence.}
 
 \item{stop}{last base to retrieve, numbered beginning at 1. if NULL the end of
 the sequence.}
+
+\item{api_key}{NCBI api-key to allow faster sequence retrieval.}
 }
 \value{
 an DNAbin object.
